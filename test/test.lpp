@@ -1,0 +1,47 @@
+<%
+local brand = "LPP"
+local title = brand
+local requirements = {
+	"Lua",
+	"C++17",
+	"CMake to build it"
+}
+%>
+
+<? "header.inc.lpp" ?>
+
+<div class="container content">
+
+<h1><%= brand %></h1>
+
+<p>A minimal Lua templates engine. Emits regular Lua code.</p>
+<p>It is a bit like PHP, but without PHP.</p>
+
+<h2>License</h2>
+
+<p>MIT</p>
+
+<h2>Requirements</h2>
+<ul>
+<% for i = 1, #requirements do %>
+  <li><%= requirements[i] %></li>
+<% end %>
+</ul>
+
+<h2>Embedded Lua code</h2>
+<pre><b>&lt;%</b> for i = 10,1,-1 do <b>%&gt;</b></pre>
+
+<h2>Shortcut for Lua print()</h2>
+<pre><b>&lt;%=</b> 1 + 1 <b>%&gt;</b></pre>
+Prints: <%= 1 + 1 %>
+
+<h2>Include a file</h2>
+<pre><b>&lt;?</b> "test.lpp" <b>?&gt;</b></pre>
+
+<h2>Usage</h2>
+
+<pre>$ lpp &lt;filename&gt;</pre>
+
+</div>
+
+<? "footer.inc.lpp" ?>

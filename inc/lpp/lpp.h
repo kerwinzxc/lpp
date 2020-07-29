@@ -21,171 +21,33 @@
 
 #pragma once
 
-#include <iostream>
+/*
+ * LPP
+ *
+ * Parses some sort of template language and emits reguilar Lua code.
+ * It is a bit like PHP, but without PHP.
+ *
+ * Lua: <% for i = 10,1,-1 do %>
+ * Shortcut for Lua print(): <%= 1 + 1 %>
+ * Include a file: <? "test.lpp" ?>
+ */
+
 #include <string>
 #include <vector>
 #include <string_view>
-#include <sstream>
+#include <functional>
+#include <iostream>
+
+extern "C" {
+#include <lua.h>
+#include <lualib.h>
+#include <lauxlib.h>
+}
 
 namespace sa {
 namespace lpp {
 
-class Tokenizer;
-
-struct Token
-{
-    enum class Type
-    {
-        Invalid,
-        Literal,
-        Code,
-        Include,
-    };
-
-    Type type;
-    size_t start;
-    size_t end;
-    std::string value;
-};
-
-using Tokens = std::vector<Token>;
-
-class Tokenizer
-{
-private:
-    size_t index_{ 0 };
-    std::string_view source_;
-    bool Eof() const { return index_ >= source_.size(); }
-    char Next() { return source_.at(index_++); }
-    char Peek(size_t offset = 1) const
-    {
-        if (source_.size() > index_ + offset)
-            return source_.at(index_ + offset);
-        return 0;
-    }
-    bool Matches(std::string_view value)
-    {
-        for (size_t i = 0; i < value.length(); ++i)
-            if (Peek(i) != value[i])
-                return false;
-        return true;
-    }
-    void SkipWhite()
-    {
-        while (isspace(Peek(0)))
-            ++index_;
-    }
-    bool ParseInclude(Token& token)
-    {
-        index_ += std::string_view("include ").length();
-        SkipWhite();
-        if (!Matches("\""))
-            return false;
-        ++index_;
-        token.start = index_;
-        while (Peek(0) != '\"')
-            ++index_;
-        token.type = Token::Type::Include;
-        token.end = index_;
-        ++index_;
-        token.value = std::string(&source_[token.start], token.end - token.start);
-        std::cout << token.value << std::endl;
-        return true;
-    }
-    Token GetNextToken()
-    {
-        Token result;
-        result.type = Token::Type::Invalid;
-        result.start = index_;
-        while (!Eof())
-        {
-            char c = Next();
-            switch (c)
-            {
-            case '<':
-            {
-                char c2 = Peek(0);
-                if (c2 == '%')
-                {
-                    if (result.type != Token::Type::Invalid)
-                    {
-                        result.end = index_ - 1;
-                        result.value = std::string(&source_[result.start], result.end - result.start);
-                        --index_;
-                        return result;
-                    }
-                    result.type = Token::Type::Code;
-                    result.start += 2;
-                    ++index_;
-                }
-                break;
-            }
-            case '%':
-            {
-                char c2 = Peek(0);
-                if (c2 == '>')
-                {
-                    if (result.type == Token::Type::Code || result.type == Token::Type::Include)
-                    {
-                        result.end = index_ - 1;
-                        ++index_;
-                        if (result.type != Token::Type::Include)
-                            result.value = std::string(&source_[result.start], result.end - result.start);
-                        return result;
-                    }
-                }
-                break;
-            }
-            case '\0':
-                result.end = index_;
-                result.value = std::string(&source_[result.start], result.end - result.start);
-                return result;
-            case 'i':
-            {
-                if (result.type == Token::Type::Code)
-                {
-                    --index_;
-                    if (Matches("include "))
-                    {
-                        ParseInclude(result);
-                        break;
-                    }
-                }
-                [[fallthrough]];
-            }
-            default:
-                if (result.type == Token::Type::Invalid)
-                    result.type = Token::Type::Literal;
-                break;
-            }
-        }
-        result.end = index_;
-        result.value = std::string(&source_[result.start], result.end - result.start);
-        return result;
-    }
-    void Reset()
-    {
-        index_ = 0;
-    }
-public:
-    Tokens Parse(std::string_view source)
-    {
-        source_ = source;
-        Reset();
-        Tokens result;
-        while (!Eof())
-            result.push_back(GetNextToken());
-        return result;
-    }
-    void Append(std::string_view source, Tokens& tokens)
-    {
-        source_ = source;
-        Reset();
-        while (!Eof())
-            tokens.push_back(GetNextToken());
-    }
-};
-
+namespace details {
 template <typename charType>
 std::basic_string<charType> Trim(const std::basic_string<charType>& str,
     const std::basic_string<charType>& whitespace = " \t")
@@ -231,45 +93,231 @@ bool ReplaceSubstring(std::basic_string<charType>& subject,
     subject.swap(newString);
     return result;
 }
+}
 
-class Generator
+class Tokenizer;
+
+struct Token
+{
+    enum class Type
+    {
+        Invalid,
+        Literal,
+        Code,
+        Include,
+        Print
+    };
+
+    Type type;
+    size_t start;
+    size_t end;
+    std::string value;
+};
+
+using Tokens = std::vector<Token>;
+
+class Tokenizer
 {
 private:
-    static std::string EscapeLiteral(const std::string& value)
+    size_t index_{ 0 };
+    std::string_view source_;
+    bool Eof() const { return index_ >= source_.size(); }
+    char Next() { return source_.at(index_++); }
+    char Peek(size_t offset = 1) const
     {
-        std::string result = Trim(value, std::string(" \t\n"));
-        if (result.empty())
-            return result;
-        ReplaceSubstring(result, std::string("\n"), std::string("\\n"));
-        return result;
+        if (source_.size() > index_ + offset)
+            return source_.at(index_ + offset);
+        return 0;
     }
-public:
-    std::string Generate(const Tokens& tokens)
+    static void ParseInclude(Token& token)
     {
-        std::stringstream ss;
-        for (const auto& token : tokens)
+        token.value = details::Trim(token.value);
+        details::ReplaceSubstring(token.value, std::string("\""), std::string(""));
+    }
+    Token GetNextToken()
+    {
+        Token result;
+        result.type = Token::Type::Invalid;
+        result.start = index_;
+        while (!Eof())
         {
-            switch (token.type)
+            char c = Next();
+            switch (c)
             {
-            case Token::Type::Invalid:
-                continue;
-            case Token::Type::Literal:
+            case '<':
             {
-                std::string value = EscapeLiteral(token.value);
-                if (!value.empty())
-                    ss << "print(\"" << EscapeLiteral(token.value) << "\")" << std::endl;
+                char c2 = Peek(0);
+                if (c2 == '%')
+                {
+                    if (result.type != Token::Type::Invalid)
+                    {
+                        result.end = index_ - 1;
+                        result.value = std::string(&source_[result.start], result.end - result.start);
+                        --index_;
+                        return result;
+                    }
+                    if (Peek(1) == '=')
+                    {
+                        result.type = Token::Type::Print;
+                        ++index_;
+                        result.start += 3;
+                    }
+                    else
+                    {
+                        result.type = Token::Type::Code;
+                        result.start += 2;
+                    }
+                    ++index_;
+                }
+                else if (c2 == '?')
+                {
+                    if (result.type != Token::Type::Invalid)
+                    {
+                        result.end = index_ - 1;
+                        result.value = std::string(&source_[result.start], result.end - result.start);
+                        --index_;
+                        return result;
+                    }
+                    result.type = Token::Type::Include;
+                    result.start += 2;
+                    ++index_;
+                }
                 break;
             }
-            case Token::Type::Code:
-                ss << token.value << std::endl;
+            case '%':
+            {
+                char c2 = Peek(0);
+                if (c2 == '>')
+                {
+                    if (result.type == Token::Type::Code || result.type == Token::Type::Print)
+                    {
+                        result.end = index_ - 1;
+                        ++index_;
+                        result.value = std::string(&source_[result.start], result.end - result.start);
+                        return result;
+                    }
+                }
                 break;
-            case Token::Type::Include:
+            }
+            case '?':
+            {
+                char c2 = Peek(0);
+                if (c2 == '>')
+                {
+                    if (result.type == Token::Type::Include)
+                    {
+                        result.end = index_ - 1;
+                        ++index_;
+                        result.value = std::string(&source_[result.start], result.end - result.start);
+                        ParseInclude(result);
+                        return result;
+                    }
+                }
+                break;
+            }
+            case '\0':
+                result.end = index_;
+                result.value = std::string(&source_[result.start], result.end - result.start);
+                return result;
+            default:
+                if (result.type == Token::Type::Invalid)
+                    result.type = Token::Type::Literal;
                 break;
             }
         }
-        return ss.str();
+        result.end = index_;
+        result.value = std::string(&source_[result.start], result.end - result.start);
+        return result;
     }
+    void Reset()
+    {
+        index_ = 0;
+    }
+    void AddToken(Tokens& tokens, Token&& token)
+    {
+        if (token.type == Token::Type::Include)
+        {
+            if (onGetFile_)
+            {
+                std::string src = onGetFile_(token.value);
+                Tokenizer tokenizer;
+                tokenizer.onGetFile_ = onGetFile_;
+                tokenizer.Append(src, tokens);
+            }
+            return;
+        }
+        tokens.push_back(std::move(token));
+    }
+public:
+    Tokens Parse(std::string_view source)
+    {
+        source_ = source;
+        Reset();
+        Tokens result;
+        while (!Eof())
+            AddToken(result, GetNextToken());
+        return result;
+    }
+    void Append(std::string_view source, Tokens& tokens)
+    {
+        source_ = source;
+        Reset();
+        while (!Eof())
+            AddToken(tokens, GetNextToken());
+    }
+    std::function<std::string(const std::string&)> onGetFile_;
 };
+
+template<typename Callback>
+void Generate(const Tokens& tokens, Callback&& callback)
+{
+    for (const auto& token : tokens)
+    {
+        switch (token.type)
+        {
+        case Token::Type::Invalid:
+            break;
+        case Token::Type::Print:
+            callback("print(" + details::Trim(token.value) + ")");
+            break;
+        case Token::Type::Literal:
+        {
+            // Use print() to print literals:
+            // https://stackoverflow.com/questions/4508119/redirecting-redefining-print-for-embedded-lua
+            if (!token.value.empty())
+                callback("print([[" + token.value + "]])");
+            break;
+        }
+        case Token::Type::Code:
+            callback(token.value);
+            break;
+        case Token::Type::Include:
+            break;
+        }
+    }
+}
+
+bool Run(const std::string& source)
+{
+    lua_State* L;
+    L = luaL_newstate();
+    if (!L)
+        return false;
+    luaL_openlibs(L);
+
+    if (luaL_dostring(L, source.c_str()) != 0)
+    {
+        size_t len = static_cast<size_t>(luaL_len(L, -1));
+        const std::string err(lua_tostring(L, -1), len);
+        std::cerr << err << std::endl;
+        lua_close(L);
+        L = nullptr;
+        return false;
+    }
+
+    lua_close(L);
+    return true;
+}
 
 }
 }
