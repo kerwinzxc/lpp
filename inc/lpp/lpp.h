@@ -269,7 +269,7 @@ public:
 };
 
 template<typename Callback>
-void Generate(const Tokens& tokens, Callback&& callback)
+inline void Generate(const Tokens& tokens, Callback&& callback)
 {
     for (const auto& token : tokens)
     {
@@ -297,7 +297,7 @@ void Generate(const Tokens& tokens, Callback&& callback)
     }
 }
 
-bool Run(const std::string& source)
+inline bool Run(const std::string& source)
 {
     lua_State* L;
     L = luaL_newstate();
