@@ -154,5 +154,5 @@ int main(int argc, char** argv)
 
 ~~~sh
 $ lpp <filename>
+$ cat test.lpp | lpp
 ~~~
-

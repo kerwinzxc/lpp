@@ -35,7 +35,7 @@ static std::string ReadFile(const std::string& fileName)
 
     std::string line;
     std::stringstream ss;
-    while (std::getline(f,line))
+    while (std::getline(f, line))
     {
         ss << line << '\n';
     }
@@ -43,15 +43,24 @@ static std::string ReadFile(const std::string& fileName)
     return ss.str();
 }
 
+static std::string ReadStdIn()
+{
+    std::string line;
+    std::stringstream ss;
+    while (std::getline(std::cin, line))
+    {
+        ss << line << '\n';
+    }
+    return ss.str();
+}
+
 int main(int argc, char** argv)
 {
+    std::string contents;
     if (argc < 2)
-    {
-        std::cerr << "Usage: lpp <file>" << std::endl;
-        return 1;
-    }
-
-    const std::string contents = ReadFile(argv[1]);
+        contents = ReadStdIn();
+    else
+        contents = ReadFile(argv[1]);
 
     sa::lpp::Tokenizer t;
     // When there is an include, read the file contents and return it.
