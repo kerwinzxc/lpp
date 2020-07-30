@@ -54,19 +54,22 @@ int main(int argc, char** argv)
     const std::string contents = ReadFile(argv[1]);
 
     sa::lpp::Tokenizer t;
-
+    // When there is an include, read the file contents and return it.
     t.onGetFile_ = [](const std::string& f) -> std::string
     {
         return ReadFile(f);
     };
-    sa::lpp::Tokens tokens = t.Parse(contents);
+    // Create a list of tokens from the source file
+    const sa::lpp::Tokens tokens = t.Parse(contents);
 
+    // Generate Lua source code from the tokens
     std::stringstream ss;
     sa::lpp::Generate(tokens, [&ss](const std::string& value)
     {
         ss << value;
     });
 
-    sa::lpp::Run(ss.str());
-    return 0;
+    // Run the Lua source code.
+    bool ret = sa::lpp::Run(ss.str());
+    return ret ? 0 : 1;
 }
