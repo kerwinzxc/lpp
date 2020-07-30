@@ -83,7 +83,7 @@ int main(int argc, char** argv)
     // Create a list of tokens from the source file
     sa::lpp::Tokens tokens = t.Parse(contents);
 
-    // GEnerate Lua source code from the tokens
+    // Generate Lua source code from the tokens
     std::stringstream ss;
     sa::lpp::Generate(tokens, [&ss](const std::string& value)
     {
