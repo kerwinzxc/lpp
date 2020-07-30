@@ -109,7 +109,7 @@ static std::string ReadFile(const std::string& fileName)
 
     std::string line;
     std::stringstream ss;
-    while (std::getline(f,line))
+    while (std::getline(f, line))
     {
         ss << line << '\n';
     }
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
         return ReadFile(f);
     };    
     // Create a list of tokens from the source file
-    sa::lpp::Tokens tokens = t.Parse(contents);
+    const sa::lpp::Tokens tokens = t.Parse(contents);
 
     // Generate Lua source code from the tokens
     std::stringstream ss;
@@ -150,9 +150,30 @@ int main(int argc, char** argv)
 }
 ~~~
 
+## Build
+
+To build the program:
+
+~~~sh
+mkdir build
+cd build
+cmake ..
+make
+~~~
+
 ## Usage
 
 ~~~sh
 $ lpp <filename>
+~~~
+
+Examples
+
+~~~sh
+# Process test.lpp and print to stdout
+$ lpp test.lpp
+# Read from stdin and print to stdout
 $ cat test.lpp | lpp
+# Process test.lpp and write to test.html
+$ lpp test.lpp > test.html
 ~~~
