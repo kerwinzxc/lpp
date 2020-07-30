@@ -92,10 +92,27 @@ int main(int argc, char** argv)
     for (int i = 1; i < argc; ++i)
     {
         char* arg = argv[i];
-        if (strcmp(arg, "-p") == 0)
+        if (strcmp(arg, "-p") == 0 || strcmp(arg, "--print") == 0)
             print = true;
-        else if (strcmp(arg, "-n") == 0)
+        else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--no-execute") == 0)
             noexecute = true;
+        else if (strcmp(arg, "-h" ) == 0 || strcmp(arg, "-?" ) == 0 || strcmp(arg, "--help" ) == 0)
+        {
+            std::cout << "LPP" << std::endl << std::endl;
+            std::cout << "Usage:" << std::endl;
+            std::cout << argv[0] << " [options] <file> ..." << std::endl;
+            std::cout << std::endl;
+            std::cout << "Options:" << std::endl;
+            std::cout << "  -h --help              Show help" << std::endl;
+            std::cout << "  -p --print             Print generated source" << std::endl;
+            std::cout << "  -n --no-execute        Don't execute" << std::endl;
+            exit(0);
+        }
+        else if (strcmp(arg, "--version" ) == 0)
+        {
+            std::cout << "LPP 1.0" << std::endl;
+            exit(0);
+        }
         else
             files.push_back(arg);
     }
