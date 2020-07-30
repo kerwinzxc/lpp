@@ -44,6 +44,10 @@ extern "C" {
 #include <lauxlib.h>
 }
 
+#if !defined (WRITE_FUNC)
+#define WRITE_FUNC "io.write"
+#endif
+
 namespace sa {
 namespace lpp {
 
@@ -278,14 +282,14 @@ inline void Generate(const Tokens& tokens, Callback&& callback)
         case Token::Type::Invalid:
             break;
         case Token::Type::Print:
-            callback("print(" + details::Trim(token.value) + ")");
+            callback(WRITE_FUNC"(" + details::Trim(token.value, std::string(" \t\r\n")) + ")");
             break;
         case Token::Type::Literal:
         {
             // Use print() to print literals:
             // https://stackoverflow.com/questions/4508119/redirecting-redefining-print-for-embedded-lua
             if (!token.value.empty())
-                callback("print([[" + token.value + "]])");
+                callback(WRITE_FUNC"([[" + token.value + "]])");
             break;
         }
         case Token::Type::Code:
