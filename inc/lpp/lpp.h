@@ -116,6 +116,7 @@ struct Token
     size_t start;
     size_t end;
     std::string value;
+    bool once { false };
 };
 
 using Tokens = std::vector<Token>;
@@ -184,6 +185,12 @@ private:
                     }
                     result.type = Token::Type::Include;
                     result.start += 2;
+                    if (Peek(1) == '#')
+                    {
+                        ++index_;
+                        ++result.start;
+                        result.once = true;
+                    }
                     ++index_;
                 }
                 break;
@@ -233,41 +240,49 @@ private:
         result.value = std::string(&source_[result.start], result.end - result.start);
         return result;
     }
-    void Reset()
-    {
-        index_ = 0;
-    }
-    void AddToken(Tokens& tokens, Token&& token)
+    void AddToken(Tokens& tokens, Token&& token, std::vector<std::string>& includes)
     {
         if (token.type == Token::Type::Include)
         {
+            if (token.once && IsIncluded(includes, token.value))
+                return;
             if (onGetFile_)
             {
+                includes.push_back(token.value);
                 std::string src = onGetFile_(token.value);
                 Tokenizer tokenizer;
                 tokenizer.onGetFile_ = onGetFile_;
-                tokenizer.Append(src, tokens);
+                tokenizer.Append(src, tokens, includes);
             }
             return;
         }
         tokens.push_back(std::move(token));
     }
+    void Append(std::string_view source, Tokens& tokens, std::vector<std::string>& includes)
+    {
+        source_ = source;
+        index_ = 0;
+        while (!Eof())
+            AddToken(tokens, GetNextToken(), includes);
+    }
+    static bool IsIncluded(std::vector<std::string>& includes, const std::string& filename)
+    {
+        const auto it = std::find_if(includes.begin(), includes.end(), [&filename](const auto& current)
+        {
+            return filename.compare(current) == 0;
+        });
+        return it != includes.end();
+    }
+    std::vector<std::string> includes_;
 public:
     Tokens Parse(std::string_view source)
     {
         source_ = source;
-        Reset();
+        index_ = 0;
         Tokens result;
         while (!Eof())
-            AddToken(result, GetNextToken());
+            AddToken(result, GetNextToken(), includes_);
         return result;
-    }
-    void Append(std::string_view source, Tokens& tokens)
-    {
-        source_ = source;
-        Reset();
-        while (!Eof())
-            AddToken(tokens, GetNextToken());
     }
     std::function<std::string(const std::string&)> onGetFile_;
 };

@@ -1,0 +1,26 @@
+<h2>Embedded Lua code</h2>
+<pre><b>&lt;%</b> for i = 10,1,-1 do <b>%&gt;</b></pre>
+
+<h2>Shortcut for Lua print()</h2>
+<pre><b>&lt;%=</b> 1 + 1 <b>%&gt;</b></pre>
+Prints: <%= 1 + 1 %>
+
+<h2>Include a file</h2>
+<pre><b>&lt;?</b> "test.lpp" <b>?&gt;</b></pre>
+
+<p>Include file only once</p>
+<pre><b>&lt;?#</b> "test.lpp" <b>?&gt;</b></pre>
+
+<h2>Loops</h2>
+
+<pre>
+&lt;% for i = 1,10,1 do %&gt;
+i = &lt;%= i .. "\n" %&gt;
+&lt;% end %&gt;
+</pre>
+
+<pre>
+<% for i = 1,10,1 do %>
+i = <%= i .. "\n" %>
+<% end %>
+</pre>

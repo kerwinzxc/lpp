@@ -34,6 +34,12 @@ Prints: 2
 <? "test.lpp" ?>
 ~~~
 
+Include a file once:
+
+~~~
+<?# "test.lpp" ?>
+~~~
+
 ## Template source
 
 See `test/test.lpp`.
@@ -43,9 +49,9 @@ See `test/test.lpp`.
 local brand = "LPP"
 local title = brand
 local requirements = {
-	"Lua",
-	"C++17",
-	"CMake to build it"
+    "Lua",
+    "C++17",
+    "CMake to build it"
 }
 %>
 
@@ -133,7 +139,7 @@ int main(int argc, char** argv)
     t.onGetFile_ = [](const std::string& f) -> std::string
     {
         return ReadFile(f);
-    };    
+    };
     // Create a list of tokens from the source file
     const sa::lpp::Tokens tokens = t.Parse(contents);
 
