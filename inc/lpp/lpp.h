@@ -307,8 +307,6 @@ inline bool Run(lua_State* L, const std::string& source)
         size_t len = static_cast<size_t>(luaL_len(L, -1));
         const std::string err(lua_tostring(L, -1), len);
         std::cerr << err << std::endl;
-        lua_close(L);
-        L = nullptr;
         return false;
     }
 
