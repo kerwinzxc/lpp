@@ -16,8 +16,8 @@ endif()
 
 include(FindLua)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -Wall -Wextra -Werror -march=native -fdiagnostics-color=always")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -Wextra -Werror -march=native -fdiagnostics-color=always")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g -Wall -Wextra -Werror -march=native -fdiagnostics-color=always")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g -Wall -Wextra -Werror -march=native -fdiagnostics-color=always")
 
 file(GLOB LPP_SOURCES src/*.cpp src/*.h)
 

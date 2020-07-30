@@ -297,13 +297,10 @@ inline void Generate(const Tokens& tokens, Callback&& callback)
     }
 }
 
-inline bool Run(const std::string& source)
+inline bool Run(lua_State* L, const std::string& source)
 {
-    lua_State* L;
-    L = luaL_newstate();
     if (!L)
         return false;
-    luaL_openlibs(L);
 
     if (luaL_dostring(L, source.c_str()) != 0)
     {
@@ -315,8 +312,19 @@ inline bool Run(const std::string& source)
         return false;
     }
 
-    lua_close(L);
     return true;
+}
+
+inline bool Run(const std::string& source)
+{
+    lua_State* L;
+    L = luaL_newstate();
+    if (!L)
+        return false;
+    luaL_openlibs(L);
+    bool result = Run(L, source);
+    lua_close(L);
+    return result;
 }
 
 }
