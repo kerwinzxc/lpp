@@ -23,6 +23,7 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <cstring>
 
 static std::string ReadFile(const std::string& fileName)
 {
@@ -54,14 +55,11 @@ static std::string ReadStdIn()
     return ss.str();
 }
 
-int main(int argc, char** argv)
-{
-    std::string contents;
-    if (argc < 2)
-        contents = ReadStdIn();
-    else
-        contents = ReadFile(argv[1]);
+static bool print = false;
+static bool noexecute = false;
 
+bool Execute(const std::string& contents)
+{
     sa::lpp::Tokenizer t;
     // When there is an include, read the file contents and return it.
     t.onGetFile_ = [](const std::string& f) -> std::string
@@ -77,8 +75,41 @@ int main(int argc, char** argv)
     {
         ss << value;
     });
+    if (print)
+        std::cout << ss.str();
+
+    if (noexecute)
+        return true;
 
     // Run the Lua source code.
-    bool ret = sa::lpp::Run(ss.str());
+    return sa::lpp::Run(ss.str());
+}
+
+int main(int argc, char** argv)
+{
+    std::vector<std::string> files;
+
+    for (int i = 1; i < argc; ++i)
+    {
+        char* arg = argv[i];
+        if (strcmp(arg, "-p") == 0)
+            print = true;
+        else if (strcmp(arg, "-n") == 0)
+            noexecute = true;
+        else
+            files.push_back(arg);
+    }
+
+    if (files.size() == 0)
+    {
+        bool ret = Execute(ReadStdIn());
+        return ret ? 0 : 1;
+    }
+
+    bool ret = true;
+    for (const auto& f : files)
+    {
+        ret = ret && Execute(ReadFile(f));
+    }
     return ret ? 0 : 1;
 }

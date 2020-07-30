@@ -40,7 +40,7 @@ Include a file once:
 <?# "test.lpp" ?>
 ~~~
 
-## Template source
+## Example template source
 
 See `test/test.lpp`.
 
