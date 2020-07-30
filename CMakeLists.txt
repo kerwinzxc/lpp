@@ -30,8 +30,5 @@ target_include_directories(lpp PUBLIC inc)
 if(LUA_FOUND)
     # ${LUA_LIBRARIES} does not work on Ubuntu
     target_link_libraries(lpp ${LUA_LIBRARIES})
-endif()
-
-if(LUA_FOUND)
     target_include_directories(lpp PUBLIC ${LUA_INCLUDE_DIR})
 endif()

@@ -34,6 +34,64 @@ Prints: 2
 <? "test.lpp" ?>
 ~~~
 
+## Integrating
+
+See `src/main.cpp`.
+
+~~~cpp
+#include <lpp/lpp.h>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+
+static std::string ReadFile(const std::string& fileName)
+{
+    std::ifstream f(fileName);
+    if (!f.is_open())
+    {
+        std::cerr << "Unable to open file " << fileName << std::endl;
+        return "";
+    }
+
+    std::string line;
+    std::stringstream ss;
+    while (std::getline(f,line))
+    {
+        ss << line << '\n';
+    }
+    f.close();
+    return ss.str();
+}
+
+int main(int argc, char** argv)
+{
+    if (argc < 2)
+    {
+        std::cerr << "Usage: lpp <file>" << std::endl;
+        return 1;
+    }
+
+    const std::string contents = ReadFile(argv[1]);
+
+    sa::lpp::Tokenizer t;
+
+    t.onGetFile_ = [](const std::string& f) -> std::string
+    {
+        return ReadFile(f);
+    };
+    sa::lpp::Tokens tokens = t.Parse(contents);
+
+    std::stringstream ss;
+    sa::lpp::Generate(tokens, [&ss](const std::string& value)
+    {
+        ss << value;
+    });
+
+    sa::lpp::Run(ss.str());
+    return 0;
+}
+~~~
+
 ## Usage
 
 ~~~sh
