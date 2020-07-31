@@ -104,11 +104,11 @@ bool ReplaceSubstring(std::basic_string<charType>& subject,
     return result;
 }
 
-std::string WrapLiteral(const std::string& value)
+inline std::string WrapLiteral(const std::string& value)
 {
     return (WRITE_FUNC "(" STRING_PREFIX) + value + (STRING_SUFFIX ")");
 }
-std::string WrapValue(const std::string& value)
+inline std::string WrapValue(const std::string& value)
 {
     return (WRITE_FUNC "(") + value + ")";
 }
