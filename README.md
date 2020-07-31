@@ -12,7 +12,7 @@ MIT
 
 * Lua
 * C++17
-* CMake to build it
+* CMake to build the program
 
 ## Embedded Lua code
 

@@ -15,6 +15,11 @@ if (CMAKE_GENERATOR MATCHES "Ninja Multi-Config")
 endif()
 
 include(FindLua)
+include(CheckIncludeFile)
+check_include_file("getopt.h" HAVE_GETOPT_H)
+if (HAVE_GETOPT_H)
+    add_definitions(-DHAVE_GETOPT_H)
+endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g -Wall -Wextra -Werror -march=native -fdiagnostics-color=always")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fsanitize=address -g -Wall -Wextra -Werror -march=native -fdiagnostics-color=always")

@@ -24,6 +24,10 @@
 #include <sstream>
 #include <fstream>
 #include <cstring>
+#include <unistd.h>
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
 
 static std::string ReadFile(const std::string& fileName)
 {
@@ -89,32 +93,60 @@ int main(int argc, char** argv)
 {
     std::vector<std::string> files;
 
-    for (int i = 1; i < argc; ++i)
+    int c;
+#ifdef HAVE_GETOPT_H
+    static struct option longOptions[] =
     {
-        char* arg = argv[i];
-        if (strcmp(arg, "-p") == 0 || strcmp(arg, "--print") == 0)
-            print = true;
-        else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--no-execute") == 0)
-            noexecute = true;
-        else if (strcmp(arg, "-h" ) == 0 || strcmp(arg, "-?" ) == 0 || strcmp(arg, "--help" ) == 0)
+    //   NAME           ARGUMENT     FLAG  SHORTNAME
+        {"print",       no_argument, NULL, 'p'},
+        {"no-execute",  no_argument, NULL, 'n'},
+        {"help",        no_argument, NULL, 'h'},
+        {"version",     no_argument, NULL, 'v'},
+        {NULL,          0,           NULL, 0}
+    };
+    int optionIndex = 0;
+    while ((c = getopt_long(argc, argv, "pnhv", longOptions, &optionIndex)) != -1)
+#else
+    while ((c = getopt(argc, argv, "pnhv")) != -1)
+#endif
+    {
+        switch (c)
         {
+        case 'p':
+            print = true;
+            break;
+        case 'n':
+            noexecute = true;
+            break;
+        case 'h':
             std::cout << "LPP" << std::endl << std::endl;
             std::cout << "Usage:" << std::endl;
             std::cout << argv[0] << " [options] <file> ..." << std::endl;
             std::cout << std::endl;
             std::cout << "Options:" << std::endl;
-            std::cout << "  -h --help              Show help" << std::endl;
+#ifdef HAVE_GETOPT_H
             std::cout << "  -p --print             Print generated source" << std::endl;
             std::cout << "  -n --no-execute        Don't execute" << std::endl;
+            std::cout << "  -h --help              Show help" << std::endl;
+            std::cout << "  -v --version           Show program version" << std::endl;
+#else
+            std::cout << "  -p              Print generated source" << std::endl;
+            std::cout << "  -n              Don't execute" << std::endl;
+            std::cout << "  -h              Show help" << std::endl;
+            std::cout << "  -v              Show program version" << std::endl;
+#endif
             exit(0);
-        }
-        else if (strcmp(arg, "--version" ) == 0)
-        {
+        case 'v':
             std::cout << "LPP 1.0" << std::endl;
             exit(0);
+        default:
+            break;
         }
-        else
-            files.push_back(arg);
+    }
+    if (optind < argc)
+    {
+        while (optind < argc)
+            files.push_back(argv[optind++]);
     }
 
     if (files.size() == 0)
@@ -126,7 +158,8 @@ int main(int argc, char** argv)
     bool ret = true;
     for (const auto& f : files)
     {
-        ret = ret && Execute(ReadFile(f));
+        if (!Execute(ReadFile(f)))
+            ret = false;
     }
     return ret ? 0 : 1;
 }
