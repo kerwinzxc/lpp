@@ -47,6 +47,12 @@ extern "C" {
 #if !defined (WRITE_FUNC)
 #define WRITE_FUNC "io.write"
 #endif
+#if !defined (STRING_PREFIX)
+#define STRING_PREFIX "[=["
+#endif
+#if !defined (STRING_SUFFIX)
+#define STRING_SUFFIX "]=]"
+#endif
 
 namespace sa {
 namespace lpp {
@@ -97,6 +103,16 @@ bool ReplaceSubstring(std::basic_string<charType>& subject,
     subject.swap(newString);
     return result;
 }
+
+std::string WrapLiteral(const std::string& value)
+{
+    return (WRITE_FUNC "(" STRING_PREFIX) + value + (STRING_SUFFIX ")");
+}
+std::string WrapValue(const std::string& value)
+{
+    return (WRITE_FUNC "(") + value + ")";
+}
+
 }
 
 class Tokenizer;
@@ -297,14 +313,14 @@ inline void Generate(const Tokens& tokens, Callback&& callback)
         case Token::Type::Invalid:
             break;
         case Token::Type::Print:
-            callback(WRITE_FUNC"(" + details::Trim(token.value, std::string(" \t\r\n")) + ")");
+            callback(details::WrapValue(details::Trim(token.value, std::string(" \t\r\n"))));
             break;
         case Token::Type::Literal:
         {
             // Use print() to print literals:
             // https://stackoverflow.com/questions/4508119/redirecting-redefining-print-for-embedded-lua
             if (!token.value.empty())
-                callback(WRITE_FUNC"([=[" + token.value + "]=])");
+                callback(details::WrapLiteral(token.value));
             break;
         }
         case Token::Type::Code:
